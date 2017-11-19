@@ -55,7 +55,7 @@ def svm_loss_naive(W, X, y, reg):
   # code above to compute the gradient.                                       #
   #############################################################################
 
-  dW += 2 * reg * W;
+  dW += 2 * reg * W
 
   return loss, dW
 
@@ -74,7 +74,13 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+  #pass
+  scores = np.dot(X, W)
+  scores_y = np.reshape(scores[np.arange(X.shape[0]), y], (X.shape[0], 1))
+  margins = np.maximum(0, scores - scores_y + 1)
+  margins[np.arange(X.shape[0]), y] = 0
+  loss = np.sum(margins) / X.shape[0]
+  loss += np.sum(W*W) * reg
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -89,7 +95,7 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  #pass
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
