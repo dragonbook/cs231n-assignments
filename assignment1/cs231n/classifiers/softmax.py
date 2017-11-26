@@ -30,7 +30,32 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  #pass
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+
+  for i in xrange(num_train):
+    scores = X[i].dot(W)
+    scores -= np.max(scores)
+    scores_exp = np.exp(scores)
+    sum_exp = np.sum(scores_exp)
+    prob = scores_exp[y[i]] / sum_exp
+    loss += -np.log(prob)
+
+    dscores = -1.0/prob * (-scores_exp[y[i]]/(sum_exp**2)) * scores_exp
+    dscores[y[i]] += -1.0/prob * (1.0/sum_exp) * scores_exp[y[i]]
+
+    #print('X[i] shape: ', X[i].shape)
+    #print('dscores shape: ', dscores.shape)
+
+    dW += np.dot(X[i].reshape(-1, 1), dscores.reshape(1, -1))
+
+  loss /= num_train
+  dW /= num_train
+
+  loss += reg * np.sum(W**2)
+  dW += W*reg*2
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
@@ -54,10 +79,21 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  #pass
+  scores = np.dot(X, W)
+  scores -= np.max(scores, axis=1).reshape(-1, 1)
+  scores_exp = np.exp(scores)
+  scores_exp_y = scores_exp[np.arange(X.shape[0]), y]
+  sum_exp = np.sum(scores_exp, axis=1)
+  prob = scores_exp_y / sum_exp
+  loss = np.sum(-np.log(prob)) / X.shape[0]
+  loss += np.sum(W*W) * reg
+
+  dscores = np.reshape(-1.0/prob * (-scores_exp_y / (sum_exp**2)), (-1, 1)) * scores_exp
+  dscores[np.arange(X.shape[0]), y] += -1.0/prob * (1.0/sum_exp) * scores_exp_y
+  dW = np.dot(X.T, dscores) / X.shape[0] + W*reg*2
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
 
   return loss, dW
-
