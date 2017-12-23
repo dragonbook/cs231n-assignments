@@ -5,6 +5,8 @@ import numpy as np
 from cs231n.layers import *
 from cs231n.layer_utils import *
 
+from past.builtins import xrange
+
 
 class TwoLayerNet(object):
     """
@@ -140,7 +142,7 @@ class FullyConnectedNet(object):
 
     def __init__(self, hidden_dims, input_dim=3*32*32, num_classes=10,
                  dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float32, seed=None):
+                 weight_scale=1e-2, dtype=np.float32, seed=None, xavier=False):
         """
         Initialize a new FullyConnectedNet.
 
@@ -180,7 +182,19 @@ class FullyConnectedNet(object):
         # beta2, etc. Scale parameters should be initialized to one and shift      #
         # parameters should be initialized to zero.                                #
         ############################################################################
-        pass
+        #pass
+        dims = []
+        dims.append(input_dim)
+        for hd in hidden_dims:
+            dims.append(hd)
+        dims.append(num_classes)
+        #self.params = {'W%d' % (i + 1): np.random.randn(dims[i], dims[i+1]) * weight_scale for i in range(self.num_layers)}
+        for li in xrange(self.num_layers):
+            if xavier:
+                self.params['W%d' % (li+1)] = np.random.randn(dims[li], dims[li+1]) / (np.sqrt(dims[li]/2))
+            else:
+                self.params['W%d' % (li+1)] = np.random.randn(dims[li], dims[li+1]) * weight_scale
+            self.params['b%d' % (li+1)] = np.zeros(dims[li+1])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -238,7 +252,38 @@ class FullyConnectedNet(object):
         # self.bn_params[1] to the forward pass for the second batch normalization #
         # layer, etc.                                                              #
         ############################################################################
-        pass
+        #pass
+        '''
+        layer_outs = {}
+        layer_caches = {}
+
+        for i in range(self.num_layers):
+            first_hidden_layer = (i == 0)
+            score_layer = (i == self.num_layers - 1)
+
+            input = X if first_hidden_layer else layer_outs[i - 1]
+            if not score_layer:
+                layer_outs[i], layer_caches[i] = affine_relu_forward(input, self.params['W%d' % (i+1)]), self.params['b%d' % (i+1)]
+            else:
+                layer_outs[i], layer_caches[i] = affine_forward(input, self.params['W%d' % (i+1)], self.params['b%d' % (i+1)])
+
+        scores = layer_outs[-1]
+        '''
+
+        forward_fs = {'ar': affine_relu_forward, 'af': affine_forward}
+        backward_fs = {'ar': affine_relu_backward, 'af': affine_backward}
+        layer_fs = ['ar'] * (self.num_layers - 1)
+        layer_fs.append('af')
+
+        layer_out = None
+        layer_caches = {}
+
+        for li in xrange(self.num_layers):
+            layer_input = X if li == 0 else layer_out
+            layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input, self.params['W%d' % (li+1)], self.params['b%d' % (li+1)])
+
+        scores = layer_out
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -261,7 +306,18 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        #pass
+        data_loss, dscores = softmax_loss(scores, y)
+
+        dout = dscores
+        for li in xrange(self.num_layers)[::-1]:
+            dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
+
+        loss = data_loss
+        for p, w in self.params.items():
+            loss += 0.5 * self.reg * np.sum(w * w)
+            grads[p] += self.reg * w
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
