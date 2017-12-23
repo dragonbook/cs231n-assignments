@@ -65,7 +65,21 @@ def sgd_momentum(w, dw, config=None):
     # TODO: Implement the momentum update formula. Store the updated value in #
     # the next_w variable. You should also use and update the velocity v.     #
     ###########################################################################
-    pass
+    #pass
+    '''
+    # nesterov momentum
+    v_prev = v.copy()
+    v *= config['momentum']
+    v -= config['learning_rate'] * dw
+    w += -config['momentum'] * v_prev + (1 + config['momentum']) * v
+    next_w = w
+    '''
+
+    # standard momentum
+    v *= config['momentum']
+    v -= config['learning_rate'] * dw
+    w += v
+    next_w = w
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -99,7 +113,11 @@ def rmsprop(x, dx, config=None):
     # in the next_x variable. Don't forget to update cache value stored in    #
     # config['cache'].                                                        #
     ###########################################################################
-    pass
+    #pass
+    config['cache'] *= config['decay_rate']
+    config['cache'] += (1 - config['decay_rate']) * (dx**2)
+    x += -config['learning_rate'] * dx / (np.sqrt(config['cache']) + config['epsilon'])
+    next_x = x
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -136,7 +154,26 @@ def adam(x, dx, config=None):
     # the next_x variable. Don't forget to update the m, v, and t variables   #
     # stored in config.                                                       #
     ###########################################################################
-    pass
+    #pass
+    # TODO: why increment 1 first? If increment 1 later, it will not pass the assignment check?!
+    #config['t'] += 1
+
+    # avoid 0
+    if config['t'] == 0:
+        print('Warning: adam t is zero, will be reset to 1')
+        config['t'] = 1
+
+    config['m'] *= config['beta1']
+    config['m'] += (1 - config['beta1']) * dx
+    mt = config['m'] / (1 - config['beta1']**config['t'])
+    config['v'] *= config['beta2']
+    config['v'] += (1 - config['beta2']) * (dx**2)
+    vt = config['v'] / (1 - config['beta2']**config['t'])
+    x += -config['learning_rate'] * mt / (np.sqrt(vt) + config['epsilon'])
+    next_x = x
+
+    # it should increment t later?! there may be an error in the assignment?
+    config['t'] += 1
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
