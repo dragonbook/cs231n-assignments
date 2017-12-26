@@ -124,6 +124,22 @@ class TwoLayerNet(object):
         return loss, grads
 
 
+def affine_batchnorm_relu_forward(x, w, b, gamma, beta, bn_param):
+    af, af_cache = affine_forward(x, w, b)
+    bn, bn_cache = batchnorm_forward(af, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(bn)
+    cache = (af_cache, bn_cache, relu_cache)
+    return out, cache
+
+
+def affine_batchnorm_relu_backward(dout, cache):
+    af_cache, bn_cache, relu_cache = cache
+    dbn = relu_backward(dout, relu_cache)
+    daf, dgamma, dbeta = batchnorm_backward(dbn, bn_cache)
+    dx, dw, db = affine_backward(daf, af_cache)
+    return dx, dw, db, dgamma, dbeta
+
+
 class FullyConnectedNet(object):
     """
     A fully-connected neural network with an arbitrary number of hidden layers,
@@ -195,6 +211,11 @@ class FullyConnectedNet(object):
             else:
                 self.params['W%d' % (li+1)] = np.random.randn(dims[li], dims[li+1]) * weight_scale
             self.params['b%d' % (li+1)] = np.zeros(dims[li+1])
+
+        if self.use_batchnorm:
+            for li in xrange(self.num_layers - 1):
+                self.params['gamma%d' % (li+1)] = np.ones(dims[li+1])
+                self.params['beta%d' % (li+1)] = np.zeros(dims[li+1])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -270,9 +291,9 @@ class FullyConnectedNet(object):
         scores = layer_outs[-1]
         '''
 
-        forward_fs = {'ar': affine_relu_forward, 'af': affine_forward}
-        backward_fs = {'ar': affine_relu_backward, 'af': affine_backward}
-        layer_fs = ['ar'] * (self.num_layers - 1)
+        forward_fs = {'ar': affine_relu_forward, 'af': affine_forward, 'abr': affine_batchnorm_relu_forward}
+        backward_fs = {'ar': affine_relu_backward, 'af': affine_backward, 'abr': affine_batchnorm_relu_backward}
+        layer_fs = ['abr'] * (self.num_layers - 1)
         layer_fs.append('af')
 
         layer_out = None
@@ -280,7 +301,17 @@ class FullyConnectedNet(object):
 
         for li in xrange(self.num_layers):
             layer_input = X if li == 0 else layer_out
-            layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input, self.params['W%d' % (li+1)], self.params['b%d' % (li+1)])
+            if li != self.num_layers - 1:
+                layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
+                                                                       self.params['W%d' % (li+1)],
+                                                                       self.params['b%d' % (li+1)],
+                                                                       self.params['gamma%d' % (li+1)],
+                                                                       self.params['beta%d' % (li+1)],
+                                                                       self.bn_params[li])
+            else:
+                layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
+                                                                       self.params['W%d' % (li+1)],
+                                                                       self.params['b%d' % (li+1)])
 
         scores = layer_out
 
@@ -311,7 +342,11 @@ class FullyConnectedNet(object):
 
         dout = dscores
         for li in xrange(self.num_layers)[::-1]:
-            dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
+            if li == self.num_layers - 1:
+                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
+            else:
+                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
+                    backward_fs[layer_fs[li]](dout, layer_caches[li])
 
         loss = data_loss
         for p, w in self.params.items():
