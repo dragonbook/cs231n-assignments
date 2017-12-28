@@ -293,7 +293,7 @@ class FullyConnectedNet(object):
 
         forward_fs = {'ar': affine_relu_forward, 'af': affine_forward, 'abr': affine_batchnorm_relu_forward}
         backward_fs = {'ar': affine_relu_backward, 'af': affine_backward, 'abr': affine_batchnorm_relu_backward}
-        layer_fs = ['abr'] * (self.num_layers - 1)
+        layer_fs = ['abr'] * (self.num_layers - 1) if self.use_batchnorm else ['ar'] * (self.num_layers - 1)
         layer_fs.append('af')
 
         layer_out = None
@@ -301,7 +301,7 @@ class FullyConnectedNet(object):
 
         for li in xrange(self.num_layers):
             layer_input = X if li == 0 else layer_out
-            if li != self.num_layers - 1:
+            if self.use_batchnorm and li != self.num_layers - 1:
                 layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
                                                                        self.params['W%d' % (li+1)],
                                                                        self.params['b%d' % (li+1)],
@@ -342,11 +342,19 @@ class FullyConnectedNet(object):
 
         dout = dscores
         for li in xrange(self.num_layers)[::-1]:
+            '''
             if li == self.num_layers - 1:
                 dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
             else:
                 dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
                     backward_fs[layer_fs[li]](dout, layer_caches[li])
+            '''
+            if self.use_batchnorm and li != self.num_layers - 1:
+                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
+                    backward_fs[layer_fs[li]](dout, layer_caches[li])
+            else:
+                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
+
 
         loss = data_loss
         for p, w in self.params.items():
