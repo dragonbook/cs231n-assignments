@@ -298,16 +298,25 @@ class FullyConnectedNet(object):
 
         layer_out = None
         layer_caches = {}
+        dropout_caches = {}
 
         for li in xrange(self.num_layers):
             layer_input = X if li == 0 else layer_out
-            if self.use_batchnorm and li != self.num_layers - 1:
-                layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
-                                                                       self.params['W%d' % (li+1)],
-                                                                       self.params['b%d' % (li+1)],
-                                                                       self.params['gamma%d' % (li+1)],
-                                                                       self.params['beta%d' % (li+1)],
-                                                                       self.bn_params[li])
+            if li != self.num_layers - 1:
+                if self.use_batchnorm:
+                    layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
+                                                                           self.params['W%d' % (li+1)],
+                                                                           self.params['b%d' % (li+1)],
+                                                                           self.params['gamma%d' % (li+1)],
+                                                                           self.params['beta%d' % (li+1)],
+                                                                           self.bn_params[li])
+                else:
+                    layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
+                                                                           self.params['W%d' % (li+1)],
+                                                                           self.params['b%d' % (li+1)])
+
+                if self.use_dropout:
+                    layer_out, dropout_caches[li] = dropout_forward(layer_out, self.dropout_param)
             else:
                 layer_out, layer_caches[li] = forward_fs[layer_fs[li]](layer_input,
                                                                        self.params['W%d' % (li+1)],
@@ -342,16 +351,14 @@ class FullyConnectedNet(object):
 
         dout = dscores
         for li in xrange(self.num_layers)[::-1]:
-            '''
-            if li == self.num_layers - 1:
-                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
-            else:
-                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
-                    backward_fs[layer_fs[li]](dout, layer_caches[li])
-            '''
-            if self.use_batchnorm and li != self.num_layers - 1:
-                dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
-                    backward_fs[layer_fs[li]](dout, layer_caches[li])
+            if li != self.num_layers - 1:
+                if self.use_dropout:
+                    dout = dropout_backward(dout, dropout_caches[li])
+                if self.use_batchnorm:
+                    dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)], grads['gamma%d' % (li+1)], grads['beta%d' % (li+1)] = \
+                        backward_fs[layer_fs[li]](dout, layer_caches[li])
+                else:
+                    dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
             else:
                 dout, grads['W%d' % (li+1)], grads['b%d' % (li+1)] = backward_fs[layer_fs[li]](dout, layer_caches[li])
 
