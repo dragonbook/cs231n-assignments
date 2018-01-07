@@ -395,7 +395,21 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
-    pass
+    #pass
+    stride = conv_param.get('stride', 1)
+    pad = conv_param.get('pad', 0)
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    Hout, Wout = int(1 + (H + 2 * pad - HH) / stride), int(1 + (W + 2 * pad - WW) / stride)
+
+    xp = np.pad(x, ((0,), (0,), (pad,), (pad,)), mode='constant')
+    out = np.zeros((N, F, Hout, Wout))
+
+    for hi in range(Hout):
+        for wi in range(Wout):
+            hs, ws = stride * hi, stride * wi
+            data = xp[:, :, hs:hs+HH, ws:ws+WW].reshape(N, -1)
+            out[:, :, hi, wi] = data.dot(w.reshape(F, -1).T) + b
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -420,7 +434,29 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    pass
+    #pass
+    x, w, b, conv_param = cache
+    stride = conv_param.get('stride', 1)
+    pad = conv_param.get('pad', 0)
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    Hout, Wout = int(1 + (H + 2 * pad - HH) / stride), int(1 + (W + 2 * pad - WW) / stride)
+
+    xp = np.pad(x, ((0,), (0,), (pad,), (pad,)), mode='constant')
+
+    dxp = np.zeros_like(xp)
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+
+    for hi in range(Hout):
+        for wi in range(Wout):
+            hs, ws = stride * hi, stride * wi
+            data = xp[:, :, hs:hs+HH, ws:ws+WW].reshape(N, -1)
+            dxp[:, :, hs:hs+HH, ws:ws+WW] += dout[:, :, hi, wi].dot(w.reshape(F, -1)).reshape(N, C, HH, WW)
+            dw += data.T.dot(dout[:, :, hi, wi]).T.reshape(F, C, HH, WW)
+            db += np.sum(dout[:, :, hi, wi], axis=0)
+
+    dx = dxp[:, :, pad:-pad, pad:-pad]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -446,7 +482,19 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # TODO: Implement the max pooling forward pass                            #
     ###########################################################################
-    pass
+    #pass
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    S = pool_param.get('stride', 2)
+    Hout, Wout = int((H - HH) / S + 1), int((W - WW) / S + 1)
+
+    out = np.zeros((N, C, Hout, Wout))
+
+    for hi in range(Hout):
+        for wi in range(Wout):
+            hs, ws = S * hi, S * wi
+            out[:, :, hi, wi] = np.max(x[:, :, hs:hs+HH, ws:ws+WW], axis=(2,3))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -469,7 +517,27 @@ def max_pool_backward_naive(dout, cache):
     ###########################################################################
     # TODO: Implement the max pooling backward pass                           #
     ###########################################################################
-    pass
+    #pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    HH = pool_param.get('pool_height', 2)
+    WW = pool_param.get('pool_width', 2)
+    S = pool_param.get('stride', 2)
+    Hout, Wout = int((H - HH) / S + 1), int((W - WW) / S + 1)
+
+    dx = np.zeros_like(x)
+
+    for hi in range(Hout):
+        for wi in range(Wout):
+            hs, ws = S * hi, S * wi
+            # TODO: better slice or mask way? np.unravel_index is not that good way? following way can be better?
+            indices = np.argmax(x[:, :, hs:hs+HH, ws:ws+WW].reshape(N*C, -1), axis=1)
+            mask = np.zeros((N, C, HH, WW)).reshape(N*C, -1)
+            mask[np.arange(N*C), indices] = 1
+            # TODO: why not a view?
+            #dx1 = dx[:, :, hs:hs+HH, ws:ws+WW].reshape(N*C, -1)
+            #dx1 += dout[:, :, hi, wi].reshape(N*C, -1) * mask
+            dx[:, :, hs:hs+HH, ws:ws+WW] = (dout[:, :, hi, wi].reshape(N*C, -1) * mask).reshape(N, C, HH, WW)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
