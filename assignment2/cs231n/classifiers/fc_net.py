@@ -117,6 +117,7 @@ class TwoLayerNet(object):
                            0.5 * self.reg * (np.sum(self.params['W2'] * self.params['W2']))
         grads['W2'] += self.reg * self.params['W2']
         grads['W1'] += self.reg * self.params['W1']
+        # TODO: regularization loss and gradients on b?
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
