@@ -1,28 +1,24 @@
 import torch
 from torch.autograd import Variable
-import time
 import copy
 
 
 class ClassificationSolver(object):
     """
-    references:
-    (1) assignment1/cs231n/solver.py
-    (2) assignment2/Pytorch.ipynb-(train, check_accuracy cell)
-    (3) pytorch tutorial, transfer learning etc
-
     The main code structure is like assignment1/cs231n/solver.py
     """
-    def __init__(self, loader_train, loader_val, model, loss_fn, optimizer, **kwargs):
+    def __init__(self, loader_train, loader_val, model, loss_fn, optimizer, scheduler=None, dtype=torch.FloatTensor,
+                 **kwargs):
         self.loader_train = loader_train
         self.loader_val = loader_val
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
-        self.scheduler = kwargs.pop('scheduler', None)
+        self.dtype = dtype
+
         self.num_epochs = kwargs.pop('num_epochs', 1)
-        self.use_gpu = kwargs.pop('use_gpu', True)
         self.print_every = kwargs.pop('print_every', 100)
         self.verbose = kwargs.pop('verbose', True)
 
@@ -47,12 +43,10 @@ class ClassificationSolver(object):
 
     def _step(self, x, y):
         """Make a single gradient update given a training batch."""
-        self.model.train(True)
+        self.model.train()
 
-        if self.use_gpu:
-            x_var, y_var = Variable(x.cuda()), Variable(y.cuda())
-        else:
-            x_var, y_var = Variable(x), Variable(y)
+        x_var = Variable(x.type(self.dtype), requires_grad=False)
+        y_var = Variable(y.type(self.dtype), requires_grad=False)
 
         # forward
         scores = self.model(x_var)
@@ -73,16 +67,13 @@ class ClassificationSolver(object):
 
 
     def check_accuracy(self, loader):
-        self.model.train(False)
+        self.model.eval()
 
         num_correct = 0
         num_samples = 0
 
         for x, y in loader:
-            if self.use_gpu:
-                x_var, y_var = Variable(x.cuda(), volatile=True), Variable(y.cuda(), volatile=True)
-            else:
-                x_var, y_var = Variable(x, volatile=True), Variable(y, volatile=True)
+            x_var, y_var = Variable(x.type(self.dtype), volatile=True), Variable(y.type(self.dtype), volatile=True)
 
             scores = self.model(x_var)
             _, preds = torch.max(scores, 1)
