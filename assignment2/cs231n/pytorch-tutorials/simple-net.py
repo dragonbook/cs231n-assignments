@@ -35,6 +35,11 @@ class Net(nn.Module):
 net = Net()
 print(net)
 
+
+
+for p in net.parameters():
+    print(p.data.size())
+
 params = list(net.parameters())
 print(len(params))
 print(params[0].size())
