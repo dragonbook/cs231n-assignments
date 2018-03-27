@@ -1,0 +1,4 @@
+1. spatial transform net
+2. unsuperised pre-training(like, use rotation or rigid transformation to
+   generate samples and estimate transformation parameters. for example: Unsupervised Representation Learning by Predicting Image Rotations
+3. automatic 2d/3d registration(unsuperised way, or no mannul superised way:))
