@@ -1,0 +1,100 @@
+cs231n/notes/neural-networks-2 and 3
+cs231n/slices/
+
+1. Setting up the data and the model
+(1) data preprocessing
+* substract mean, then equalize scale(for image, it may not be necessary, since all channels in range [0, 255])
+> common pitfall: preprocess on entier datset, then split it to trian, val and test. Instead, preprocess on train data, then apply on val/test data
+> in practice: it is very import to zero-center data, and it is common to see normalization of every pixels as well
+
+(2) weights initialization
+* weights, their mean and std...
+* bias, zero maybe ok?
+* batch normalization (after convolutional layers or full-connected layers)
+> in practice: the current recommendation is to use ReLU units and use the w = np.random.randn(n) * sqrt(2.0/n).
+               batch normalization.
+
+(3) Regularization, controlling the capacity of Neural networks to prevent overfitting
+* L2 regularization, penalizing peaky weight vectors and preferring diffuse weight vectors 
+* L1 regularization, more sparse, use sparese subset of their most important inputs and become nearly invariant to the "noisy" inputs 
+* note: prefier L2 to L1 as suggested
+* max norm constrants? constraint on magnitude of the weight vector for every neuron
+* dropout, extremely effective and simple. More relative methods like dropout?(e.g data augmentation)
+* bias regularization, not common used
+* per-layer regularization? not common
+> in practice: most common to use a single, global L2 regularization.
+               also common to combine this with dropout applied after all layers.
+               default p = 0.5, can be tuned on validation data
+
+
+2. Loss function               
+* regularization loss part, penalizing some measure of complexity of the model
+* data loss part, in a superviesd learning problem measures the compatibility between a prediction and ground truth label
+* classfication: common loss functions: svm, softmax.
+  Problem: when the set of labels is very large, how to design loss function? and assign labels?(e.g hierachical softmax?). 
+           it may impact the performance and is generally problem-dependent.
+* attribute classfication: the label is a binary vector
+* regression: L2, L1 loss
+> in practice: how to design loss functions
+> in practice: It is important to note that the L2 loss is much harder to optimize than a more stable loss such as Softmax.
+               Intuitively, it requires a very fragile and specific property from the network to output exactly one correct value for each input (and its augmentations)
+               (..., read more in cs231n notes)
+> in practice: When faced with a regression task, first consider if it is absolutely necessary. Instead,
+               have a strong preference to discretizing your outputs to bins and perform classification over them whenever possible.               
+* structured prediction: The structured loss refers to a case where the labels can be arbitrary structures such as graphs, trees, or other complex objects.         
+
+
+3. Gradient check
+* use the center formula
+* use relative error for comparison
+* be careful with relative error, 1e-2, 1e-4, 1e-7, and consider the aspects: kinks of objective function, depth of layer in more deeper layers
+> pitfall: only use single precision to compute. Try double precision, the error may be down from 1e-2 to 1e-8.. 
+* Stick around active range of floating point: e.g avoid divide very small number etc, they may be numerically unstable. [todo: read what every xxx about Floating-Point xxx] 
+* many details in notes..
+
+4. Before learning: sanity checks Tips/Tricks
+* correct loss at chance performance, e.g. inital loss without regularization and with it
+* overfit a tiny subset of data
+
+
+5. Babysitting the learning process
+* loss function: learning rate, {very high, high, good, low} 
+  wiggle: batch size
+
+* Train/Val Accuracy: overfitting
+  strong overfitting(small validation accuracy compared to training accuracy): increase regularization(more l2, more dropout etc) or collect more data.
+  validation accuracy tracks the training accuracy fairly well(but they both low..), this indicates that model capacity is not high enough: make
+  the model larger by increasing the number of parameters.
+ 
+* Ratio of weights:updates 
+
+* Activation/Gradient distributions per layer
+   incorrect initialization can slow down or even completely stall the learning process
+   debug: not all zeros, not all saturated..
+
+* First layer visualization   
+  good: smooth, clean and diverse features
+
+
+6. Parameters updates
+* Global
+  sgd and bells and whistles
+
+* Annealing the learning rate  
+  One heuristic you may see in practice is to watch the validation error while training with a fixed learning rate,
+  and reduce the learning rate by a constant (e.g. 0.5) whenever the validation error stops improving.
+
+* Per-parameter adaptive learning rates(adagrad, rmsprop)
+
+
+7. Hyperparameter optimization
+* worker and master style to search Hyperparameters
+* one validation fold is ok when dataset size is respectable
+* Hyperparameter ranges: log scale, original scale
+* perfer random search to grid search
+* careful with best values on border
+* stage search from coarse to find: coarse search, few epoches, fine search, more epchos
+
+
+8. Evaluation
+Model Ensamble

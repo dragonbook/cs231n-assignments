@@ -1,4 +1,24 @@
+# ideas
 1. spatial transform net
 2. unsuperised pre-training(like, use rotation or rigid transformation to
    generate samples and estimate transformation parameters. for example: Unsupervised Representation Learning by Predicting Image Rotations
 3. automatic 2d/3d registration(unsuperised way, or no mannul superised way:))
+
+# next steps
+(1) tune model(systematicly, logicaly, and make better)
+* select *few* architectures and try different configurations(Do comparisions, you really want something more clearly)
+* get intutive, under the help of course's slides and notes(Follow the suggestion steps, and be careful about each step)
+* debug, visualization
+
+(2) assignment3
+* deep dream, neural style course notebooks etc(inside the cnn)
+
+(3) more
+* reimplment mask rcnn with pytorch, (do feature extraction, there are some good practices)
+* apply self-supervised methods to do classification, and registration?
+* other new techniques (e.g more stable optimization?)
+
+(4) and more
+* more about cnn, e.g efros team
+* cs231n, rnn, gan, RL
+* deep RL
