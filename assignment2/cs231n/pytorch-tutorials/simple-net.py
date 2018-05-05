@@ -86,3 +86,13 @@ output = net(input)
 loss = criterion(output, target)
 loss.backward()
 optimizer.step()
+
+
+for name, param in net.named_parameters():
+    if param.requires_grad:
+        print(name, param.data)
+
+
+#print('net.conv1: ', net.conv1)
+print('net.conv1.weights: ', net.conv1.weight.data.cpu().numpy().shape)
+print('net.conv1.bias: ', net.conv1.bias.data.cpu().numpy().shape)
