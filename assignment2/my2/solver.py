@@ -126,8 +126,6 @@ class ClassificationSolver(object):
         self.model.load_state_dict(self.best_model_wts)
 
 
-
-
-
-
+    def get_best_model_wts(self):
+        return self.best_model_wts
 
