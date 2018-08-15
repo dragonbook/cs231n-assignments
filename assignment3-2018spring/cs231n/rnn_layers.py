@@ -376,10 +376,25 @@ def lstm_forward(x, h0, Wx, Wh, b):
     # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
-    pass
+    #pass
+    N, T, D = x.shape
+    H = h0.shape[1]
+
+    h = np.zeros((N, T, H), dtype=h0.dtype)
+    core_cache = []
+    prev_h = h0
+    prev_c = np.zeros((N, H), dtype=h0.dtype)
+
+    for ti in range(T):
+        h_t, c_t, cache_t = lstm_step_forward(x[:,ti,:], prev_h, prev_c, Wx, Wh, b)
+        h[:,ti,:] = h_t
+        core_cache.append(cache_t)
+        prev_h = h_t
+        prev_c = c_t
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
+    cache = (core_cache, D)
 
     return h, cache
 
@@ -404,7 +419,31 @@ def lstm_backward(dh, cache):
     # TODO: Implement the backward pass for an LSTM over an entire timeseries.  #
     # You should use the lstm_step_backward function that you just defined.     #
     #############################################################################
-    pass
+    #pass
+    N, T, H = dh.shape
+    cache, D = cache
+
+    dx  = np.zeros((N, T, D), dtype=dh.dtype)
+    dh0 = None
+    dWx = np.zeros((D, 4*H), dtype=dh.dtype)
+    dWh = np.zeros((H, 4*H), dtype=dh.dtype)
+    db  = np.zeros((4*H), dtype=dh.dtype)
+
+    dh_next = np.zeros((N, H), dtype=dh.dtype)
+    dc_t = np.zeros((N, H), dtype=dh.dtype)
+
+    for ti in range(T-1, -1, -1):
+        dh_t = dh[:,ti,:] + dh_next
+        dx_t, dprev_h_t, dprev_c_t, dWx_t, dWh_t, db_t = \
+            lstm_step_backward(dh_t, dc_t, cache[ti])
+        dx[:,ti,:] = dx_t
+        dWx += dWx_t
+        dWh += dWh_t
+        db += db_t
+
+        if ti == 0: dh0 = dprev_h_t
+        dh_next = dprev_h_t
+        dc_t = dprev_c_t
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
