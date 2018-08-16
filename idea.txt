@@ -1,0 +1,45 @@
+GAN
+1. gan的结构跟justin johnson的Perceptual Losses for Real-Time Style Transfer and Super-Resolution
+比较相似。虽然前向式的style transfer（包含image transfomer和后续固定的训练好的feature network)没有
+显示的用gan，但我感觉其实是类似的（注：目前我刚看了cs231n gan视频以及初略看了style transfer的摘要，
+所以本文是直观的感觉，以及结合网络结构和训练过程产生的理解，待后续深入理解后，再来修正）。
+
+对于一般的gan，generator产生图像，然后discrimitor会抽取输入（产生
+的图像或真实图像）的多层特征，以及应用后续的变换，再加上一个二分类器。训练generator使得产生图像跟真实
+图像分为一类，训练discrimitor使得能区分开。
+
+在style transfer的image transformer部分其实就是一个generator，将输入转换到一个想要的目标（图像）上。
+对于该目标需要有约束（或判定、引导，例如使得风格跟某些参考图像类似），这会以后续网络加loss的方式，或者
+说以discrimitor的方式。对于style transfer，后面的固定的训练好的feature network(e.g vgg)可认为是
+discrimitor（例如，在使用分类来训练特征网络时，本身就是一个discrimitor)。在这个固定的（feature network)discrimitor上，
+引入了一些跟图像风格（内容，纹理）相关的loss（定义在中间一些特征层上），由于feature network经过大量训练，
+足够泛化（较好逼近了真实的想要的分布），那么可以认为generator能够有希望训练到一个较好的loss，
+使得最终产生的图像跟真实图像（的内容和纹理）比较相像，而discrimitor是一直固定的。
+
+上面的style transfer是固定了一个较好的discrimitor，并且discrimitor判别的是一个跟风格（纹理和内容）
+比较相关的目标（loss）。然后寻找输入图像能够让discrimitor相信（或者说相近的输出），而该图像是由一个
+可训练的transformer/generator网络而来。当discrimitor，或者这个feature net(e.g vgg)没有训练好时，那么
+generator产生的数据不够真实，但feature net已经训练较好时，只训练generator就能产生比较好的结果。
+
+2. 更多的，训练gan的discrimitor跟普通的分类网络这些没有多少差别。我们将generator的结果看成以前分类网络的
+输入，然后以batch形式训练。那么每次discrimitor每个batch看到两个类别的样本（真实的为A类，产生的为B类），
+在训练过程中，discrimitor分类网络会看到大量的A类，以及逐渐跟A类相似的B类样本。逐渐相似是通过反向
+传播误差到B类图像，如果是gatys的image style论文，那么会直接修改图像本身，并且是迭代优化修改（多次前后
+向传播），但这里是通过generator/transformer去调节权重，逼近想要的变换，而非修改中间生成的图像本身。
+在一开始训练时，generator产生的图像不好，那么如果gan的discrimitor的loss不好，则梯度太小不好训练。即
+generator产生的图像对discrimitor来说，无法产生大的梯度，这样样本浪费了，而且无法训练到generator。所以，
+gan有些loss上的研究和技巧。针对这些一开始不好的generator产生的样本，对于训练discrimitor来说也有影响，
+因为他们太容易被discrimitor判别，导致discrimitor过拟合（或者边界太宽松，或者没好好学习特征）。这个
+问题在以前的分类网络中也会有这个情况，所以存在了一些样本挖掘式的训练，以及focal loss这些。
+
+3. 针对justin johnson的工作，应该可以有更多类似的工作。discrimitor不用怎么训练，而是采用训练好的alexnet
+或者resnet这些，或者用他们初始化。这样更容易训练，并且产生类似gan的一些能力。另外，类似focal loss以及
+gan调节loss（例如训练generator时，最大化discrimitor的错误，而非最小化准确），应该能反过来思考之前的
+cnn网络（分类，分割这些）的训练过程和结果。
+
+4. 对抗样本？更多的工作来理解？
+
+4. 虚拟的对抗？顾险峰的一些工作？
+
+
+
