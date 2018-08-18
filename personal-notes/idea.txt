@@ -37,9 +37,18 @@ gan有些loss上的研究和技巧。针对这些一开始不好的generator产�
 gan调节loss（例如训练generator时，最大化discrimitor的错误，而非最小化准确），应该能反过来思考之前的
 cnn网络（分类，分割这些）的训练过程和结果。
 
-4. 对抗样本？更多的工作来理解？
+4. gan的generator部分，针对图像，以及以Radford 2016为例。从z(R100)为输入，运用一个类似deconv的结构去
+产生一个图像G(z)。当然这种做法比较普遍，例如在分割问题上也有这样的结构。除此之外，在gatys的image style
+的论文的引用论文xxx by invert xx里，分析了能从网络的层激活里恢复出多少输入图片的信息。这个对generator
+的z以及权重能否帮助理解？？
 
-5. 虚拟的对抗？顾险峰的一些工作？
+
+5. 对抗样本？更多的工作来理解？
+
+6. 虚拟的对抗？顾险峰的一些工作？
 
 
+---- GAN的应用 ----
+1. 对齐？三维对齐？
+* generator搞成spatial transformer network
 
